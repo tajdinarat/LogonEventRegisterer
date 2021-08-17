@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -7,269 +6,205 @@ namespace LogonEventRegisterer
 {
     class Program
     {
-        public class singleReg
+        static string path = AppDomain.CurrentDomain.BaseDirectory + "LOGS\\";
+        static string filepath = path + "logReg_" + DateTime.Now.Date.ToShortDateString().Replace('/', '_') + ".csv";
+        public class singleLog
         {
-            public singleReg()
+            public singleLog()
             {
 
             }
 
-            private string message = "";
-            private DateTime timeGenerated;
-            private DateTime timeWritten;
-            private string machine = "";
-            private long instanceID;
-            private string category = "";
-            private string username = "";
+            private string state;
+            private string securityID;
+            private string accountName;
+            private string accountDomain;
+            private string logonID;
+            private DateTime dateTime;
 
-            private string entryType = "";
-            public void entryTypeSet(string entryType)
+            public void stateSet(string state)
             {
-                this.entryType = entryType;
+                this.state = state;
             }
-            public string entryTypeGet()
+            public string stateGet()
             {
-                return entryType;
+                return this.state;
             }
-            private string eventId = "";
-            public void eventIdSet(string eventId)
+            public void securityIDSet(string securityID)
             {
-                this.eventId = eventId;
+                this.securityID = securityID;
             }
-            public string eventIdGet()
+            public string securityIDGet()
             {
-                return eventId;
+                return this.securityID;
             }
-
-            public void messageSet(string message)
+            public void accountNameSet(string accountName)
             {
-                this.message = message;
+                this.accountName = accountName;
             }
-            public string messageGet()
+            public string accountNameGet()
             {
-                return message;
+                return this.accountName;
             }
-
-            public void timeGeneratedSet(DateTime timeGenerated)
+            public void accountDomainSet(string accountDomain)
             {
-                this.timeGenerated = timeGenerated;
+                this.accountDomain = accountDomain;
             }
-            public DateTime timeGeneratedGet()
+            public string accountDomainGet()
             {
-                return timeGenerated;
+                return this.accountDomain;
             }
-
-            public void timeWrittenSet(DateTime timeWritten)
+            public void logonIDSet(string logonID)
             {
-                this.timeWritten = timeWritten;
+                this.logonID = logonID;
             }
-            public DateTime timeWrittenGet()
+            public string logonIDGet()
             {
-                return timeWritten;
+                return this.logonID;
             }
-
-            public void machineSet(string machine)
+            public void dateTimeSet(DateTime dateTime)
             {
-                this.machine = machine;
+                this.dateTime = dateTime;
             }
-            public string machineGet()
+            public DateTime dateTimeGet()
             {
-                return machine;
-            }
-
-            public void instanceIDSet(long instanceID)
-            {
-                this.instanceID = instanceID;
-            }
-            public long instanceIDGet()
-            {
-                return instanceID;
-            }
-
-            public void categorySet(string category)
-            {
-                this.category = category;
-            }
-            public string categoryGet()
-            {
-                return category;
-            }
-
-            public void usernameSet(string username)
-            {
-                this.username = username;
-            }
-            public string usernameGet()
-            {
-                return username;
+                return this.dateTime;
             }
         }
-
 
         static void Main(string[] args)
         {
+            DoStuff();
+            Console.WriteLine("\n ---Logon Event Registerer Stopped.---");
+            Console.ReadKey();
+        }
+
+        private static void DoStuff()
+        {
             /*
-             * access "System" log table to get data from
+             * access "Security" log table to get data from
              */
-            EventLog[] eventLog = EventLog.GetEventLogs(Environment.MachineName);
+            EventLog[] eventLog;
             EventLog entryToRead = new EventLog();
-            EventLog entryToReadSec = new EventLog();
-            List<singleReg> regList = new List<singleReg>();
-            List<singleReg> regListSec = new List<singleReg>();
-            foreach (var entry in eventLog)
+
+            while (true)
             {
-                if(entry.Log == "System")
-                {
-                    entryToRead = entry;
-                }
-                else if(entry.Log == "Security")
-                {
-                    entryToReadSec = entry;
-                }
-            }
+                eventLog = EventLog.GetEventLogs(Environment.MachineName);
 
-            foreach (EventLogEntry log in entryToRead.Entries)
-            {
-                if (log.Source == "Microsoft-Windows-Winlogon")
+                foreach (var entry in eventLog)
                 {
-                    singleReg newReg = new singleReg();
-                    newReg.messageSet(log.Message.Substring(0, 11).ToUpper());
-                    newReg.timeGeneratedSet(log.TimeGenerated);
-                    newReg.timeWrittenSet(log.TimeWritten);
-                    newReg.machineSet(log.MachineName);
-                    newReg.instanceIDSet(log.InstanceId);
-                    newReg.categorySet(log.Category);
-                    newReg.usernameSet(log.UserName);
-                    regList.Add(newReg);
-
-
-                    //Console.WriteLine($"\nmessage         : {log.Message.Substring(0, 11).ToUpper()}");
-                    //Console.WriteLine($"time generated  : {log.TimeGenerated}");
-                    //Console.WriteLine($"time written    : {log.TimeWritten}");
-                    //Console.WriteLine($"machine         : {log.MachineName}");
-                    //Console.WriteLine($"instance ID     : {log.InstanceId}");
-                    //Console.WriteLine($"category        : {log.Category}");
-                    //Console.WriteLine($"username        : {log.UserName}");
-                }
-            }
-            printToText(regList);
-            GC.Collect();
-
-            foreach (EventLogEntry log in entryToReadSec.Entries)
-            {
-                if(log.Source == "Microsoft-Windows-Security-Auditing")
-                {
-                    //Console.WriteLine("\n===================================");
-                    //Console.WriteLine($"\nmessage             : {log.Message}");
-                    //Console.WriteLine($"time generated      : {log.TimeGenerated}");
-                    //Console.WriteLine($"time written        : {log.TimeWritten}");
-                    //Console.WriteLine($"entry type          : {log.EntryType}");
-                    //Console.WriteLine($"event id            : {log.EventID}");
-                    //Console.WriteLine($"instance id         : {log.InstanceId}");
-                    //Console.WriteLine($"machine name        : {log.MachineName}");
-                    //Console.WriteLine($"category            : {log.Category}");
-                    //Console.WriteLine($"category number     : {log.CategoryNumber}");
-                    //Console.WriteLine($"container           : {log.Container}");
-                    //Console.WriteLine($"data                : {log.Data}");
-                    //Console.WriteLine($"replacement strings : {log.ReplacementStrings}");
-                    //Console.WriteLine($"site                : {log.Site}");
-                    //Console.WriteLine($"source              : {log.Source}");
-                    //Console.WriteLine($"username            : {log.UserName}");
-                    //Console.WriteLine("\n---------------------------------------");
-                    //Console.WriteLine($"\n     : {log}");
-                    
-                    if(log.EntryType.ToString() == "SuccessAudit" || log.EntryType.ToString() == "FailureAudit")
+                    if (entry.Log == "Security")
                     {
-                        singleReg newReg = new singleReg();
-                        newReg.messageSet("-");
+                        entryToRead = entry;
+                        break;
+                    }
+                }
+
+                foreach (EventLogEntry log in entryToRead.Entries)
+                {
+                    /*
+                     * check if log belongs to this date
+                     * and check if exists to avoid overflow
+                     */
+                    if (DateTime.Now.Date == log.TimeWritten.Date)
+                    {
                         /*
-                         * we should trim it
-                         * 
-                         * newReg.messageSet(log.Message);
+                         * Category number 4800 and 4801 indicates that
+                         * this register contains logon/logoff data
                          */
-                        newReg.timeGeneratedSet(log.TimeGenerated);
-                        newReg.timeWrittenSet(log.TimeWritten);
-                        newReg.machineSet(log.MachineName);
-                        newReg.instanceIDSet(log.InstanceId);
-                        newReg.categorySet(log.Category);
-                        newReg.usernameSet(log.UserName);
-                        newReg.entryTypeSet(log.EntryType.ToString());
-                        newReg.eventIdSet(log.EventID.ToString());
-                        regListSec.Add(newReg);
+                        if (log.InstanceId == 4800 || log.InstanceId == 4801)
+                        {
+                            if (!existControl(log))
+                            {
+                                singleLog newLog = new singleLog();
+                                string[] datass = messageSplitter(log.Message);
+
+                                newLog.stateSet(datass[0]);
+                                newLog.securityIDSet(datass[1]);
+                                newLog.accountNameSet(datass[2]);
+                                newLog.accountDomainSet(datass[3]);
+                                newLog.logonIDSet(datass[4]);
+                                newLog.dateTimeSet(log.TimeWritten);
+
+                                printLogSingle(newLog);
+                            }
+                        }
+                    }
+                }
+                Console.WriteLine($"done --> {DateTime.Now}\n\nTarget directory : {path}");
+            }
+            
+        }
+
+
+        public static bool existControl(EventLogEntry log)
+        {
+            /*
+             * check if the same log record exists
+             */
+            if (File.Exists(filepath))
+            {
+                var reader = File.ReadAllLines(filepath);
+                foreach (var line in reader)
+                {
+                    if (log.TimeWritten.ToString().Trim() == line.Split(',')[0].Trim())
+                    {
+                        return true;
                     }
                 }
             }
-            printToTextSec(regListSec);
-            
-            Console.WriteLine("done.");
-            Console.ReadKey();
-
+            return false;
         }
-
-        public static void printToTextSec(List<singleReg> regList)
+        public static void printLogSingle(singleLog myLog)
         {
-            string path = AppDomain.CurrentDomain.BaseDirectory + "\\LOGS";
+            /*
+             * create directory if not exists
+             */
 
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            Directory.CreateDirectory(path);
 
-            string filepath = path + "\\logRegSec_" + DateTime.Now.Date.ToShortDateString().Replace('/', '_') + "1.csv";
-
+            
+            /*
+             * appending to (or if doesnt exist creating) the file
+             * and record with a specific format*
+             * 
+             * *format : writing order of the strings below is important
+             *           due to make reading easier.
+             *           
+             *           e.g. : headers and infos are aligned so it wont be confusing to read file
+             */
             if (!File.Exists(filepath))
             {
+                string headerTime = "Date & Time", headerState = "State", headerSecurityID = "Security ID", headerAccountName = "Account Name",
+                    headerAccountDomain = "Domain", headerLogonID = "Logon ID";
+
                 StreamWriter streamWriter = File.CreateText(filepath);
-                streamWriter.Write("InstanceID , MachineName , Date&Time , Message , Username , ");
-                streamWriter.WriteLine("Category , EntryType , EventID");
-                foreach (var regObject in regList)
-                {
-                    streamWriter.Write($"{regObject.instanceIDGet()} , {regObject.machineGet()} , {regObject.timeGeneratedGet()} , ");
-                    streamWriter.Write($"{regObject.messageGet()} , {regObject.usernameGet()} , ");
-                    streamWriter.WriteLine($"{regObject.categoryGet()} , {regObject.entryTypeGet()} , {regObject.eventIdGet()}");
-                }
+                streamWriter.WriteLine($"{headerTime} , {headerState} , {headerAccountDomain} , {headerAccountName} , {headerLogonID} , {headerSecurityID}");
+                streamWriter.WriteLine($"{myLog.dateTimeGet()} , {myLog.stateGet()} , {myLog.accountDomainGet()} , {myLog.accountNameGet()} , " +
+                    $"{myLog.logonIDGet()} , {myLog.securityIDGet()}");
+
+                streamWriter.Close();
             }
             else
             {
                 StreamWriter streamWriter = File.AppendText(filepath);
-                foreach (var regObject in regList)
-                {
-                    streamWriter.Write($"{regObject.instanceIDGet()} , {regObject.machineGet()} , {regObject.timeGeneratedGet()} , ");
-                    streamWriter.Write($"{regObject.messageGet()} , {regObject.usernameGet()} , ");
-                    streamWriter.WriteLine($"{regObject.categoryGet()} , {regObject.entryTypeGet()} , {regObject.eventIdGet()}");
-                }
+                streamWriter.WriteLine($"{myLog.dateTimeGet()} , {myLog.stateGet()} , {myLog.accountDomainGet()} , {myLog.accountNameGet()} , " +
+                    $"{myLog.logonIDGet()} , {myLog.securityIDGet()}");
+                streamWriter.Close();
             }
         }
 
-        public static void printToText(List<singleReg> regList)
+        public static string[] messageSplitter(string messageToSplit)
         {
-            string path = AppDomain.CurrentDomain.BaseDirectory + "\\LOGS";
-            if(!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-
-            string filepath = path + "\\logReg_" + DateTime.Now.Date.ToShortDateString().Replace('/', '_') + "1.csv";
-
-            if(!File.Exists(filepath))
-            {
-                StreamWriter streamWriter = File.CreateText(filepath);
-                streamWriter.WriteLine("InstanceID , MachineName , Date&Time , Message , Username");
-                foreach (var regObject in regList)
-                {
-                    streamWriter.Write($"{regObject.instanceIDGet()} , {regObject.machineGet()} , {regObject.timeGeneratedGet()} , ");
-                    streamWriter.WriteLine($"{regObject.messageGet()} , {regObject.usernameGet()}");
-                }
-            }
-            else
-            {
-                StreamWriter streamWriter = File.AppendText(filepath);
-                foreach (var regObject in regList)
-                {
-                    streamWriter.Write($"{regObject.instanceIDGet()} , {regObject.machineGet()} , {regObject.timeGeneratedGet()} , ");
-                    streamWriter.WriteLine($"{regObject.timeWrittenGet()} , {regObject.messageGet()} , {regObject.usernameGet()}");
-                }
-            }
+            //split message data to retrieve needed info
+            string[] lines = messageToSplit.Split(new[] { Environment.NewLine },StringSplitOptions.None);
+            string[] linesFinal = new string[5];
+            linesFinal[0] = lines[0]; //state
+            linesFinal[1] = (lines[3].Trim().Split())[3]; //security id
+            linesFinal[2] = (lines[4].Trim().Split())[3]; //account name
+            linesFinal[3] = (lines[5].Trim().Split())[3]; //account domain
+            linesFinal[4] = (lines[6].Trim().Split())[3]; //logon id
+            return linesFinal;
         }
     }
 }
